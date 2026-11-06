@@ -91,6 +91,22 @@ public sealed class Rules
         return null;
     }
 
+    /// <summary>
+    /// Why a whole file or folder may not be deleted: everything in <see cref="GetLockReason"/>, plus the approved
+    /// cache folders themselves (only their contents may be cleaned). Null means it may be deleted.
+    /// </summary>
+    public string? GetDeleteBlockReason(string path)
+    {
+        var reason = GetLockReason(path);
+        if (reason is not null) return reason;
+        try
+        {
+            if (IsKnownLocationRoot(PathUtil.Normalize(path))) return "Cache folder: only its contents can be cleaned";
+        }
+        catch (ArgumentException) { return "Unsupported or unsafe path"; }
+        return null;
+    }
+
     /// <summary>True if the (normalized) path is exactly one of the approved cache folders.</summary>
     public bool IsKnownLocationRoot(string normalizedPath) =>
         _known.Any(k => string.Equals(k.Path, normalizedPath, StringComparison.OrdinalIgnoreCase));

@@ -84,7 +84,7 @@ public sealed class Cleaner
         }
         else
         {
-            var lockReason = _rules.GetLockReason(p);
+            var lockReason = _rules.GetDeleteBlockReason(p);
             if (lockReason is not null) return lockReason;
         }
 

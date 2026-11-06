@@ -12,7 +12,7 @@ using WinCleaner.Core;
 
 namespace WinCleaner.App.ViewModels;
 
-public enum AppState { Home, Scanning, Results, Cleaning, Summary }
+public enum AppState { Home, Scanning, Results, Cleaning, Summary, Explore }
 
 public partial class MainViewModel : ObservableObject
 {
@@ -31,6 +31,8 @@ public partial class MainViewModel : ObservableObject
         _scanner = new Scanner(_rules);
         _cleaner = new Cleaner(_rules);
         IsAdmin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
+        Explore = new ExploreViewModel(_rules, _cleaner, IsAdmin);
+        Explore.CloseRequested += () => State = AppState.Home;
 
         var sysDrive = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
         foreach (var d in DriveInfo.GetDrives())
@@ -67,6 +69,17 @@ public partial class MainViewModel : ObservableObject
     // ---- State -------------------------------------------------------------------------------------
     [ObservableProperty] private AppState _state = AppState.Home;
     public bool IsAdmin { get; }
+    partial void OnStateChanged(AppState value) => Explore.IsActive = value == AppState.Explore;
+
+    // ---- Explore (interactive folder-size map) -------------------------------------------------------
+    public ExploreViewModel Explore { get; }
+
+    [RelayCommand]
+    private async Task ExploreRootAsync(string root)
+    {
+        State = AppState.Explore;
+        await Explore.StartAsync(root);
+    }
 
     // ---- Home --------------------------------------------------------------------------------------
     public ObservableCollection<DriveItem> Drives { get; } = new();

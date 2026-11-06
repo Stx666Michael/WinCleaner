@@ -74,6 +74,39 @@ public class CleanerTests : IDisposable
     }
 
     [Fact]
+    public void An_approved_cache_folder_itself_cannot_be_deleted_only_its_contents()
+    {
+        _sb.File_(Path.Combine(_sb.Cache, "a.bin"), 100);
+        // Cache is an approved whole-folder cache in the sandbox rules; deleting the folder as a plain folder must fail.
+        var f = Sandbox.Make(_sb.Cache, 100, Category.LargeFile, RiskTier.Review, isDir: true, contentsOnly: false);
+
+        var result = _sb.NewCleaner().Clean(new[] { f }, CleanMode.Permanent);
+        Assert.True(Directory.Exists(_sb.Cache));
+        Assert.True(File.Exists(Path.Combine(_sb.Cache, "a.bin")));
+        Assert.Contains("only its contents", Assert.Single(result.Failures).Reason);
+        Assert.NotNull(_sb.Rules.GetDeleteBlockReason(_sb.Cache));
+        Assert.Null(_sb.Rules.GetDeleteBlockReason(Path.Combine(_sb.Cache, "a.bin")));
+    }
+
+    [Fact]
+    public void A_whole_user_folder_can_be_deleted_with_a_fresh_stamp_but_never_the_profile_itself()
+    {
+        var dir = Path.Combine(_sb.Me, "Projects", "old");
+        _sb.File_(Path.Combine(dir, "sub", "x.bin"), 500);
+        _sb.File_(Path.Combine(dir, "y.bin"), 500);
+        var f = Sandbox.Make(dir, 1000, Category.LargeFile, RiskTier.Review, isDir: true);
+
+        var result = _sb.NewCleaner().Clean(new[] { f }, CleanMode.Permanent);
+        Assert.False(Directory.Exists(dir));
+        Assert.Equal(1000, result.BytesFreed);
+
+        var profile = Sandbox.Make(_sb.Me, 1, Category.LargeFile, RiskTier.Review, isDir: true);
+        var blocked = _sb.NewCleaner().Clean(new[] { profile }, CleanMode.Permanent);
+        Assert.True(Directory.Exists(_sb.Me));
+        Assert.Single(blocked.Failures);
+    }
+
+    [Fact]
     public void Contents_only_empties_a_cache_but_keeps_the_folder()
     {
         _sb.File_(Path.Combine(_sb.Cache, "a.bin"), 1000);

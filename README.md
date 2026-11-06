@@ -1,8 +1,9 @@
 # WinCleaner
 
 A small, modern Windows storage cleaner. It scans your drives (or any folders you pick), finds junk and large
-files, and lets you choose exactly what to remove. **Scanning is read-only. Nothing is deleted until you tick
-items and confirm.**
+files, and lets you choose exactly what to remove. It can also **map where your space went**: an interactive
+treemap of every folder that you can click through level by level. **Scanning is read-only. Nothing is deleted
+until you pick it and confirm.**
 
 ## Screenshots
 
@@ -10,8 +11,35 @@ Pick what to scan, review the results, then confirm. (Shown with demo data.)
 
 | | |
 |---|---|
-| ![Home screen: choose drives or folders to scan](docs/screenshots/01-home.png) | ![Results: categories, risk badges and checkboxes](docs/screenshots/02-results.png) |
+| ![Home screen: choose drives or folders to scan or explore](docs/screenshots/01-home.png) | ![Results: categories, risk badges and checkboxes](docs/screenshots/02-results.png) |
 | ![Confirm dialog: Recycle Bin by default](docs/screenshots/03-confirm.png) | ![Summary after cleaning](docs/screenshots/04-summary.png) |
+
+### Explore disk space
+
+| | |
+|---|---|
+| ![Treemap of a folder: block size is disk space](docs/screenshots/05-explore.png) | ![Drilled one level down, with breadcrumbs and back/up buttons](docs/screenshots/06-explore-drilldown.png) |
+| ![Deleting a folder straight from the explorer](docs/screenshots/07-explore-delete.png) | |
+
+## Explore disk space
+
+Click **Explore** on any drive or folder on the home screen. WinCleaner maps the folder tree once (a few seconds
+for a whole drive), then you can move around instantly:
+
+- **Treemap:** every block is a folder or file, and its area is its size. Hover for details; the matching row in
+  the list on the right lights up too.
+- **Go deeper:** click a folder block (or its row) to open it. Folders are colour-coded, files are grey.
+- **Go back easily:** Back / Forward / Up buttons, a clickable breadcrumb path, `Alt+Left`, `Alt+Right`,
+  `Alt+Up` or `Backspace`, and the mouse back/forward buttons.
+- **Delete from the map:** use the trash button on a row, right-click a block or row, press `Delete` while
+  hovering, or use **Delete folder** to remove the folder you are in. You always get a confirm dialog (Recycle Bin
+  by default). Sizes and the treemap update straight away; no rescan needed.
+- **Also:** open any item in Windows Explorer, and **Rescan** to pick up changes made elsewhere.
+
+Deleting here goes through the same safety checks as the cleaner: Windows, Program Files, ProgramData, system
+files, other users' profiles and the approved cache folders themselves can never be deleted (their trash buttons
+are disabled and explain why), junctions and symlinks are never followed, and every action is logged.
+Sizes are file sizes, not space allocated on disk, and cloud-only (OneDrive-style) files are not counted.
 
 ## Run it
 
@@ -67,8 +95,9 @@ dotnet test
 dotnet publish src/WinCleaner.App -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o publish
 ```
 
-Layout: `src/WinCleaner.Core` (rules, scanner, cleaner; no UI), `src/WinCleaner.App` (WPF + WPF-UI, MVVM),
-`tests/WinCleaner.Tests` (39 tests that run against throwaway sandbox folders and never touch real files).
+Layout: `src/WinCleaner.Core` (rules, scanner, cleaner, folder-tree scanner, treemap layout; no UI),
+`src/WinCleaner.App` (WPF + WPF-UI, MVVM; `Controls/TreemapControl.cs` draws the treemap),
+`tests/WinCleaner.Tests` (57 tests that run against throwaway sandbox folders and never touch real files).
 
 ## Notes
 

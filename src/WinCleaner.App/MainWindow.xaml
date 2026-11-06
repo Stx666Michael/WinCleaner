@@ -3,11 +3,83 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:local="clr-namespace:WinCleaner.App"
+                 xmlns:controls="clr-namespace:WinCleaner.App.Controls"
                  Title="WinCleaner" Width="1120" Height="760" MinWidth="920" MinHeight="640"
                  ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica"
                  WindowStartupLocation="CenterScreen">
 
+    <!-- Explorer navigation shortcuts (they only act while the Explore screen is showing) -->
+    <Window.InputBindings>
+        <KeyBinding Key="Left" Modifiers="Alt" Command="{Binding Explore.GoBackCommand}" />
+        <KeyBinding Key="Right" Modifiers="Alt" Command="{Binding Explore.GoForwardCommand}" />
+        <KeyBinding Key="Up" Modifiers="Alt" Command="{Binding Explore.GoUpCommand}" />
+        <KeyBinding Key="Back" Command="{Binding Explore.GoUpCommand}" />
+        <KeyBinding Key="Delete" Command="{Binding Explore.DeleteHoveredCommand}" />
+    </Window.InputBindings>
+
     <Window.Resources>
+        <!-- A clickable list row with a hover highlight (also lit up when the matching treemap block is hovered). -->
+        <Style x:Key="RowButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Stretch" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsHot}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsFolder}" Value="False">
+                    <Setter Property="Cursor" Value="Arrow" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CrumbButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PlainRow" TargetType="ListBoxItem">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <ContentPresenter />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
@@ -98,6 +170,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <CheckBox Style="{StaticResource RowCheckBox}" IsChecked="{Binding IsSelected}" />
                                         <StackPanel Grid.Column="1" Margin="8,0,0,0">
@@ -105,6 +178,11 @@
                                             <ProgressBar Value="{Binding UsedPercent, Mode=OneWay}" Maximum="100" Height="6" Margin="0,8,0,6" />
                                             <TextBlock Text="{Binding UsageText}" FontSize="12" Style="{StaticResource Secondary}" />
                                         </StackPanel>
+                                        <ui:Button Grid.Column="2" Content="Explore" Icon="{ui:SymbolIcon DataTreemap24}"
+                                                   Margin="16,0,0,0" VerticalAlignment="Center"
+                                                   ToolTip="See what takes up space on this drive"
+                                                   Command="{Binding DataContext.ExploreRootCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                   CommandParameter="{Binding Root}" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -120,11 +198,17 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <ui:SymbolIcon Symbol="Folder24" FontSize="20" VerticalAlignment="Center" />
                                         <TextBlock Grid.Column="1" Text="{Binding}" Margin="12,0" VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis" />
-                                        <ui:Button Grid.Column="2" Appearance="Transparent" ToolTip="Remove"
+                                        <ui:Button Grid.Column="2" Content="Explore" Icon="{ui:SymbolIcon DataTreemap24}"
+                                                   Margin="0,0,6,0" VerticalAlignment="Center"
+                                                   ToolTip="See what takes up space in this folder"
+                                                   Command="{Binding DataContext.ExploreRootCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                   CommandParameter="{Binding}" />
+                                        <ui:Button Grid.Column="3" Appearance="Transparent" ToolTip="Remove"
                                                    Icon="{ui:SymbolIcon Dismiss24}"
                                                    Command="{Binding DataContext.RemoveFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                    CommandParameter="{Binding}" />
@@ -414,6 +498,210 @@
                 </StackPanel>
             </ScrollViewer>
 
+            <!-- ============================= EXPLORE ============================ -->
+            <Grid Visibility="{Binding State, Converter={StaticResource StateToVis}, ConverterParameter=Explore}">
+
+                <!-- mapping the folder tree -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="720"
+                            Visibility="{Binding Explore.IsScanning, Converter={StaticResource BoolToVis}}">
+                    <ui:ProgressRing IsIndeterminate="True" Width="64" Height="64" />
+                    <TextBlock Text="Mapping disk space…" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,24,0,8" />
+                    <TextBlock Text="{Binding Explore.ScanStats}" Style="{StaticResource Secondary}" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding Explore.ScanCurrent}" Style="{StaticResource Tertiary}" FontSize="12"
+                               TextTrimming="CharacterEllipsis" MaxWidth="640" Margin="0,14,0,0" HorizontalAlignment="Center" />
+                    <ui:Button Content="Cancel" Margin="0,28,0,0" HorizontalAlignment="Center" MinWidth="120"
+                               Command="{Binding Explore.CancelScanCommand}" />
+                </StackPanel>
+
+                <!-- the explorer -->
+                <Grid Margin="24,4,24,16" Visibility="{Binding Explore.IsScanning, Converter={StaticResource InvertBoolToVis}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- title -->
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Explore disk space" FontSize="26" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Explore.Title}" Style="{StaticResource Secondary}" Margin="0,2,0,0"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <ui:Button Content="Rescan" Icon="{ui:SymbolIcon ArrowSync24}" Command="{Binding Explore.RescanCommand}"
+                                       ToolTip="Scan again to pick up changes made outside this app" />
+                            <ui:Button Content="Close" Icon="{ui:SymbolIcon Dismiss24}" Margin="8,0,0,0" Command="{Binding Explore.CloseCommand}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- navigation: back / forward / up, breadcrumbs, folder actions -->
+                    <Grid Grid.Row="1" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:Button Icon="{ui:SymbolIcon ArrowLeft24}" ToolTip="Back (Alt+Left)" Command="{Binding Explore.GoBackCommand}" />
+                            <ui:Button Icon="{ui:SymbolIcon ArrowRight24}" ToolTip="Forward (Alt+Right)" Margin="4,0,0,0" Command="{Binding Explore.GoForwardCommand}" />
+                            <ui:Button Icon="{ui:SymbolIcon ArrowUp24}" ToolTip="Up one level (Backspace or Alt+Up)" Margin="4,0,0,0" Command="{Binding Explore.GoUpCommand}" />
+                        </StackPanel>
+                        <ItemsControl Grid.Column="1" ItemsSource="{Binding Explore.Crumbs}" Margin="12,0" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Style="{StaticResource CrumbButton}" Content="{Binding Text}" Command="{Binding NavigateCommand}" />
+                                        <TextBlock Text="›" Style="{StaticResource Tertiary}" VerticalAlignment="Center" FontSize="16"
+                                                   Visibility="{Binding IsLast, Converter={StaticResource InvertBoolToVis}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <ui:Button Content="Open in Explorer" Icon="{ui:SymbolIcon FolderOpen24}" Command="{Binding Explore.OpenCurrentInExplorerCommand}" />
+                            <ui:Button Content="Delete folder" Icon="{ui:SymbolIcon Delete24}" Margin="8,0,0,0"
+                                       ToolTip="{Binding Explore.DeleteFolderTip}" Command="{Binding Explore.DeleteFolderCommand}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- result of the last delete -->
+                    <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,0,8" Padding="14,8"
+                            Visibility="{Binding Explore.HasStatus, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Explore.Status}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                            <ui:Button Grid.Column="1" Content="Rescan" Margin="12,0,0,0" Command="{Binding Explore.RescanCommand}"
+                                       Visibility="{Binding Explore.StatusNeedsRescan, Converter={StaticResource BoolToVis}}" />
+                            <ui:Button Grid.Column="2" Appearance="Transparent" Icon="{ui:SymbolIcon Dismiss24}" Margin="4,0,0,0"
+                                       ToolTip="Dismiss" Command="{Binding Explore.ClearStatusCommand}" />
+                        </Grid>
+                    </Border>
+
+                    <!-- size summary -->
+                    <Grid Grid.Row="3" Margin="2,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Explore.Summary}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                    Visibility="{Binding Explore.ShowAdminHint, Converter={StaticResource BoolToVis}}">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource Secondary}" FontSize="12">
+                                <Run Text="{Binding Explore.DeniedFolders, Mode=OneWay}" /><Run Text=" folders could not be read" />
+                            </TextBlock>
+                            <ui:Button Content="Restart as administrator" Margin="10,0,0,0" Icon="{ui:SymbolIcon Shield24}"
+                                       Command="{Binding RestartAsAdminCommand}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- treemap + list -->
+                    <Grid Grid.Row="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="14" />
+                            <ColumnDefinition Width="360" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Style="{StaticResource Card}" Padding="6">
+                            <Grid>
+                                <controls:TreemapControl Items="{Binding Explore.Items}" HoverItem="{Binding Explore.HoverItem, Mode=TwoWay}">
+                                    <controls:TreemapControl.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Open in Explorer"
+                                                      Command="{Binding PlacementTarget.HoverItem.RevealCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                            <MenuItem Header="Delete…"
+                                                      Command="{Binding PlacementTarget.HoverItem.DeleteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                        </ContextMenu>
+                                    </controls:TreemapControl.ContextMenu>
+                                </controls:TreemapControl>
+                                <TextBlock Text="{Binding Explore.EmptyText}" Style="{StaticResource Secondary}" IsHitTestVisible="False"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Visibility="{Binding Explore.IsEmpty, Converter={StaticResource BoolToVis}}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="2" Style="{StaticResource Card}" Padding="0,8,0,4">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <StackPanel Margin="14,0,14,8">
+                                    <TextBlock Text="In this folder" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Tertiary}" FontSize="11" TextWrapping="Wrap"
+                                               Text="Click a folder to open it. Right-click for more. Press Delete while hovering to remove." />
+                                </StackPanel>
+                                <ListBox Grid.Row="1" ItemsSource="{Binding Explore.Items}" BorderThickness="0" Background="Transparent"
+                                         ItemContainerStyle="{StaticResource PlainRow}" HorizontalContentAlignment="Stretch"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="6,0">
+                                                <Button Style="{StaticResource RowButton}" Command="{Binding NavigateCommand}"
+                                                        MouseEnter="Row_MouseEnter" MouseLeave="Row_MouseLeave" ToolTip="{Binding Path}">
+                                                    <Button.ContextMenu>
+                                                        <ContextMenu>
+                                                            <MenuItem Header="Open in Explorer" Command="{Binding RevealCommand}" />
+                                                            <MenuItem Header="Delete…" Command="{Binding DeleteCommand}" />
+                                                        </ContextMenu>
+                                                    </Button.ContextMenu>
+                                                    <Grid Margin="8,6,42,6">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <Border Width="10" Height="10" CornerRadius="3" Background="{Binding Brush}" VerticalAlignment="Center" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="8,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Grid.Column="2" Text="{Binding SizeText}" FontWeight="SemiBold" />
+                                                        </Grid>
+                                                        <Grid Grid.Row="1" Margin="18,1,0,5">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{Binding Detail}" FontSize="11" Style="{StaticResource Tertiary}" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding PercentText}" FontSize="11" Style="{StaticResource Secondary}" />
+                                                        </Grid>
+                                                        <ProgressBar Grid.Row="2" Margin="18,0,0,0" Height="4" Maximum="100" Value="{Binding Percent, Mode=OneWay}"
+                                                                     Foreground="{Binding Brush}" />
+                                                    </Grid>
+                                                </Button>
+                                                <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Delete24}" Padding="6"
+                                                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,4,0"
+                                                           ToolTip="{Binding DeleteTip}" Command="{Binding DeleteCommand}"
+                                                           Visibility="{Binding ShowDelete, Converter={StaticResource BoolToVis}}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Grid>
+
             <!-- ============================ CONFIRM DIALOG ====================== -->
             <Grid Background="#99000000" Panel.ZIndex="10"
                   Visibility="{Binding ShowConfirm, Converter={StaticResource BoolToVis}}">
@@ -452,6 +740,51 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
+            </Grid>
+
+            <!-- ======================= EXPLORE: DELETE CONFIRM ================== -->
+            <Grid Background="#99000000" Panel.ZIndex="11"
+                  Visibility="{Binding Explore.ShowDeleteConfirm, Converter={StaticResource BoolToVis}}">
+                <Border Width="500" VerticalAlignment="Center" HorizontalAlignment="Center" CornerRadius="12" Padding="26"
+                        Background="{DynamicResource ApplicationBackgroundBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Explore.DeleteTitle}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Explore.DeleteDetail}" Style="{StaticResource Secondary}" TextWrapping="Wrap" Margin="0,8,0,0" />
+
+                        <RadioButton GroupName="xmode" Margin="0,18,0,0" MinWidth="0"
+                                     IsChecked="{Binding Explore.DeletePermanent, Converter={StaticResource InvertBool}}"
+                                     Content="Move to Recycle Bin (recommended)" />
+                        <RadioButton GroupName="xmode" Margin="0,4,0,0" MinWidth="0"
+                                     IsChecked="{Binding Explore.DeletePermanent}"
+                                     Content="Delete permanently" />
+
+                        <TextBlock Style="{StaticResource Secondary}" TextWrapping="Wrap" Margin="0,14,0,0"
+                                   Visibility="{Binding Explore.DeletePermanent, Converter={StaticResource InvertBoolToVis}}"
+                                   Text="You can restore it from the Recycle Bin. Disk space is only freed once the Recycle Bin is emptied." />
+                        <TextBlock Foreground="{x:Static local:TierBrushConverter.Review}" TextWrapping="Wrap" Margin="0,14,0,0"
+                                   Visibility="{Binding Explore.DeletePermanent, Converter={StaticResource BoolToVis}}"
+                                   Text="Permanently deleted files cannot be restored." />
+                        <TextBlock Style="{StaticResource Tertiary}" TextWrapping="Wrap" Margin="0,10,0,0" FontSize="12"
+                                   Text="Make sure you know what this is. Removing app or system data can stop programs from working. Windows and Program Files are protected and cannot be deleted here." />
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
+                            <ui:Button Content="Cancel" MinWidth="100" Command="{Binding Explore.CancelDeleteCommand}" />
+                            <ui:Button Content="Delete" Appearance="Primary" MinWidth="100" Margin="10,0,0,0"
+                                       Icon="{ui:SymbolIcon Delete24}" Command="{Binding Explore.ConfirmDeleteCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- ======================= EXPLORE: DELETING ======================== -->
+            <Grid Background="#99000000" Panel.ZIndex="12"
+                  Visibility="{Binding Explore.IsDeleting, Converter={StaticResource BoolToVis}}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" />
+                    <TextBlock Text="{Binding Explore.DeletingName}" Margin="0,16,0,0" HorizontalAlignment="Center" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Deleting…" Style="{StaticResource Secondary}" HorizontalAlignment="Center" />
+                </StackPanel>
             </Grid>
         </Grid>
     </Grid>
