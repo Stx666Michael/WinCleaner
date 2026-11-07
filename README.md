@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/icon.png" width="112" alt="WinCleaner icon: a treemap of folder blocks with a sparkle">
+</p>
+
 # WinCleaner
 
 A small, modern Windows storage cleaner. It scans your drives (or any folders you pick), finds junk and large

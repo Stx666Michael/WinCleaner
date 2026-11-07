@@ -4,7 +4,7 @@
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:local="clr-namespace:WinCleaner.App"
                  xmlns:controls="clr-namespace:WinCleaner.App.Controls"
-                 Title="WinCleaner" Width="1120" Height="760" MinWidth="920" MinHeight="640"
+                 Title="WinCleaner" Icon="Assets/app.ico" Width="1120" Height="760" MinWidth="920" MinHeight="640"
                  ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica"
                  WindowStartupLocation="CenterScreen">
 
@@ -146,7 +146,11 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="WinCleaner" />
+        <ui:TitleBar Grid.Row="0" Title="WinCleaner">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/Assets/icon-32.png" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
 
         <Grid Grid.Row="1">
 
