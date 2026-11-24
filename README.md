@@ -48,7 +48,7 @@ Sizes are file sizes, not space allocated on disk, and cloud-only (OneDrive-styl
 ## Run it
 
 Requires Windows 10/11 (x64). Build it (see [Build from source](#build-from-source)), then run
-`publish\WinCleaner.exe`. It needs the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0).
+`publish\WinCleaner.exe`. It needs the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 You can also pass folders to scan instead of the system drive: `WinCleaner.exe D:\Games "C:\Users\me\Videos"`.
 
@@ -106,6 +106,5 @@ Layout: `src/WinCleaner.Core` (rules, scanner, cleaner, folder-tree scanner, tre
 ## Notes
 
 - Windows x64 only.
-- .NET 8 reaches end of support on 10 Nov 2026. The app makes no network connections, but you may want to
-  retarget to a newer .NET LTS later (change `TargetFramework`, install that runtime).
+- Targets .NET 10 (LTS, supported until November 2028). Building needs the .NET 10 SDK.
 - Duplicate-file detection is not included.
